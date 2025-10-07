@@ -32,8 +32,80 @@ Two teams battle to put **six answers** in the correct order, earning points for
 - **React Native** (Expo)
 - **TypeScript**
 - **React Navigation** for game flow
-- **React Native Reanimated / Gesture Handler** for drag-and-drop sorting
 - **Context API** for game state
-- **Jest / React Native Testing Library** for unit tests
 
 ---
+
+## 📁 Project Structure
+
+```
+/src
+  /components     # Reusable UI components
+    - AnswerCard.tsx
+    - SortBoard.tsx
+    - TeamScore.tsx
+    - RoundSummary.tsx
+  /screens        # Main app screens
+    - HomeScreen.tsx
+    - GameSetupScreen.tsx
+    - GameScreen.tsx
+    - ResultsScreen.tsx
+  /context        # State management
+    - GameContext.tsx
+  /utils          # Helper functions and data
+    - scoring.ts
+    - questions.ts
+  /types          # TypeScript type definitions
+    - game.ts
+```
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js (v16 or later)
+- npm or yarn
+- Expo CLI (optional, but recommended)
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/DiegoRojo99/Sort-Wars.git
+cd Sort-Wars
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Start the development server:
+```bash
+npm start
+```
+
+4. Run on your device:
+   - Scan the QR code with the Expo Go app (iOS/Android)
+   - Or press `w` to run in web browser
+   - Or press `a` for Android emulator
+   - Or press `i` for iOS simulator
+
+---
+
+## 🎯 How to Play
+
+1. **Setup**: Enter names for Team A and Team B
+2. **Round 1**: Team A sorts the answers
+3. **Round 2**: Team B gets their turn
+4. **Round 3**: Team A gets a final chance
+5. **Scoring**: Points awarded for each new correct position
+6. **Winner**: Team with the highest total score wins!
+
+---
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
