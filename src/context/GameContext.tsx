@@ -1,13 +1,13 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { GameState, Team, Round, Answer } from '../types/game';
 import { mockQuestions } from '../utils/questions';
-import { calculatePoints } from '../utils/scoring';
+import { calculatePoints, isAllCorrect } from '../utils/scoring';
 
 interface GameContextType {
   gameState: GameState;
   startGame: (team1Name: string, team2Name: string) => void;
   submitAnswer: (answers: Answer[]) => void;
-  nextRound: () => void;
+  nextTurnOrRound: () => void;
   resetGame: () => void;
 }
 
@@ -38,10 +38,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  // Store the answers for the current turn, update scores, and check for round end
   const submitAnswer = (answers: Answer[]) => {
     const currentQuestion = mockQuestions[gameState.currentQuestionIndex];
     const currentTeam = gameState.teams[gameState.currentTeamIndex];
-    
     // Find previous correct positions for this question
     const previousRounds = gameState.rounds.filter(
       r => r.questionId === currentQuestion.id
@@ -56,7 +56,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       previousCorrectPositions
     );
 
-    // Create new round
+    // Create new round (turn)
     const newRound: Round = {
       id: `round-${Date.now()}`,
       questionId: currentQuestion.id,
@@ -64,7 +64,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       attempts: [answers],
       correctPositions,
       pointsEarned: points,
-      isRebound: gameState.rounds.filter(r => r.questionId === currentQuestion.id).length > 0,
+      isRebound: previousRounds.length > 0,
     };
 
     // Update team score
@@ -74,12 +74,69 @@ export function GameProvider({ children }: { children: ReactNode }) {
         : team
     );
 
-    setGameState({
-      ...gameState,
+    setGameState(prev => ({
+      ...prev,
       teams: updatedTeams,
-      rounds: [...gameState.rounds, newRound],
-    });
+      rounds: [...prev.rounds, newRound],
+    }));
   };
+
+  // Advance to the next turn or round, following the correct team order and round ending rules
+  const nextTurnOrRound = () => {
+    const currentQuestionIndex = gameState.currentQuestionIndex;
+    const currentQuestion = mockQuestions[currentQuestionIndex];
+    const roundsForCurrentQuestion = gameState.rounds.filter(
+      r => r.questionId === currentQuestion.id
+    );
+    const turnsTaken = roundsForCurrentQuestion.length;
+    const lastAttempt = roundsForCurrentQuestion.length > 0
+      ? roundsForCurrentQuestion[roundsForCurrentQuestion.length - 1].attempts[0]
+      : null;
+    const allCorrect = lastAttempt ? isAllCorrect(lastAttempt) : false;
+
+    // Determine if round should end (all correct or 3 turns)
+    if (allCorrect || turnsTaken >= 3) {
+      // Move to next question
+      const nextQuestionIndex = currentQuestionIndex + 1;
+      if (nextQuestionIndex >= mockQuestions.length) {
+        // Game finished
+        setGameState(prev => ({
+          ...prev,
+          gamePhase: 'finished',
+        }));
+      } else {
+        // Next question, reset to correct team and round
+        setGameState(prev => ({
+          ...prev,
+          currentQuestionIndex: nextQuestionIndex,
+          currentTeamIndex: getFirstTeamIndexForRound(prev.currentRound + 1),
+          currentRound: prev.currentRound + 1,
+        }));
+      }
+    } else {
+      // Next turn in the same round
+      const nextTurn = turnsTaken + 1;
+      setGameState(prev => ({
+        ...prev,
+        currentTeamIndex: getTeamIndexForTurn(prev.currentRound, nextTurn),
+        currentRound: prev.currentRound, // round number stays the same for the question
+      }));
+    }
+  };
+
+  // Helper: Get the team index for a given round and turn (1-based)
+  function getTeamIndexForTurn(roundNumber: number, turnNumber: number): number {
+    // Odd rounds: A B A (0 1 0), Even rounds: B A B (1 0 1)
+    if (roundNumber % 2 === 1) {
+      return turnNumber === 2 ? 1 : 0;
+    } else {
+      return turnNumber === 2 ? 0 : 1;
+    }
+  }
+  // Helper: Get the first team index for a round
+  function getFirstTeamIndexForRound(roundNumber: number): number {
+    return roundNumber % 2 === 1 ? 0 : 1;
+  }
 
   const nextRound = () => {
     const roundsForCurrentQuestion = gameState.rounds.filter(
@@ -129,7 +186,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         gameState,
         startGame,
         submitAnswer,
-        nextRound,
+        nextTurnOrRound,
         resetGame,
       }}
     >

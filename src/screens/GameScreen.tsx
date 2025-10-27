@@ -19,7 +19,7 @@ type GameScreenProps = {
 };
 
 export function GameScreen({ navigation }: GameScreenProps) {
-  const { gameState, submitAnswer, nextRound } = useGame();
+  const { gameState, submitAnswer, nextTurnOrRound } = useGame();
   const [showResults, setShowResults] = useState(false);
 
   if (gameState.gamePhase === 'finished') {
@@ -45,7 +45,7 @@ export function GameScreen({ navigation }: GameScreenProps) {
 
   const handleNext = () => {
     setShowResults(false);
-    nextRound();
+    nextTurnOrRound();
   };
 
   return (
@@ -95,7 +95,22 @@ export function GameScreen({ navigation }: GameScreenProps) {
             </Text>
           </View>
           <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
-            <Text style={styles.nextButtonText}>Next Round</Text>
+            <Text style={styles.nextButtonText}>
+              {/* Show 'Next Turn' or 'Next Round' depending on progress */}
+              {(() => {
+                const roundsForCurrentQuestion = gameState.rounds.filter(
+                  r => r.questionId === currentQuestion.id
+                );
+                const turnsTaken = roundsForCurrentQuestion.length;
+                const lastAttempt = turnsTaken > 0 ? roundsForCurrentQuestion[turnsTaken - 1].attempts[0] : null;
+                const allCorrect = lastAttempt ? require('../utils/scoring').isAllCorrect(lastAttempt) : false;
+                if (allCorrect || turnsTaken >= 3) {
+                  return 'Next Round';
+                } else {
+                  return 'Next Turn';
+                }
+              })()}
+            </Text>
           </TouchableOpacity>
         </View>
       )}
